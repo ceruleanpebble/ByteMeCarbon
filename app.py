@@ -5,6 +5,8 @@ import os
 import json
 import ast
 import logging
+
+# Lazy imports for better startup performance
 from parser import parse_code, generate_code
 from optimizer import optimize
 from complexity import estimate_complexity
@@ -12,6 +14,10 @@ from reporter import generate_report
 
 app = Flask(__name__)
 CORS(app)
+
+# Cache for template rendering
+app.config['TEMPLATES_AUTO_RELOAD'] = False
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 3600
 
 # Config
 UPLOAD_FOLDER = "uploads"
@@ -183,6 +189,15 @@ def server_error(e):
 
 if __name__ == "__main__":
     try:
+        import os
+        from waitress import serve
+        
+        port = int(os.environ.get("PORT", 5000))
+        print(f"🌱 ByteMeCarbon running on http://localhost:{port}")
+        print("Using Waitress WSGI server for better performance")
+        serve(app, host='127.0.0.1', port=port, threads=4)
+    except ImportError:
+        # Fallback to Flask dev server if waitress not installed
         import os
         port = int(os.environ.get("PORT", 5000))
         app.run(host="127.0.0.1", port=port, debug=False)
