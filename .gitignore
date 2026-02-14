@@ -1,0 +1,26 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+
+# Generated optimization outputs
+optimized.py
+report.json
+
+# CodeCarbon emissions files
+emissions.csv
+emissions.csv.bak
+emissions.csv_*.bak
+
+# Temporary files
+*.log
+*.tmp
+
+# OS junk
+.DS_Store
+Thumbs.db
