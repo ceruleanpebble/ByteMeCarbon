@@ -3,89 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByteMeCarbon</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Fira+Code&display=swap" rel="stylesheet">
+    <title>CarbonIQ Dashboard | GreenCompute Engine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="parallax-wrapper">
-        <div class="parallax-layer bg-blob"></div>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1 class="dashboard-title">CarbonIQ Dashboard</h1>
+            <p class="dashboard-subtitle">Real-time Sustainability Analysis & Optimization</p>
+        </header>
 
-        <main class="content-layer">
-            <header class="fade-in">
-                <nav><span>ByteMeCarbon.</span></nav>
-                <div class="hero">
-                    <h1>Greener Code. <br><span class="gradient-text">Smaller Footprint.</span></h1>
-                    <p>Upload your Python scripts to optimize energy efficiency and reduce CO2 emissions per execution.</p>
+        <div class="dashboard-grid">
+            <!-- Left Panel: Source Analysis -->
+            <div class="panel source-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                    </span>
+                    <span class="panel-title">Source Analysis</span>
+                    <span class="badge badge-input">INPUT</span>
                 </div>
-            </header>
-
-            <section class="glass-container">
-                <div id="drop-zone" class="drop-area">
-                    <div class="upload-icon">✦</div>
-                    <p>Drop your <code>.py</code> script here</p>
-                    <input type="file" id="file-input" accept=".py" hidden>
-                    <button class="minimal-btn" onclick="document.getElementById('file-input').click()">Select File</button>
+                <div class="panel-content">
+                    <div id="drop-zone" class="drop-area">
+                        <div class="upload-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <p class="drop-text">Drag and drop your <span class="highlight-text">.py file</span> here</p>
+                        <input type="file" id="file-input" accept=".py" hidden>
+                    </div>
+                    <button class="optimize-btn" id="optimize-btn" disabled>
+                        <span class="btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                        </span>
+                        Optimize Code
+                    </button>
                 </div>
+            </div>
 
-                <div id="results" class="hidden">
-                    <div class="comparison-grid">
-                        <div class="code-pane">
-                            <label>Current</label>
-                            <pre id="original-display"></pre>
-                        </div>
-                        <div class="code-pane highlight">
-                            <label>Optimized</label>
-                            <pre id="optimized-display"></pre>
-                        </div>
+            <!-- Right Panel: Optimization Results -->
+            <div class="panel results-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a10 10 0 0 1 7.07 17.07M5 5a10 10 0 0 0 7.07 17.07"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </span>
+                    <span class="panel-title">Optimization Results</span>
+                    <span class="badge badge-output">OUTPUT</span>
+                </div>
+                <div class="panel-content">
+                    <div id="placeholder" class="results-placeholder">
+                        <p>Upload a file to the left to see the optimized sustainability candidate...</p>
                     </div>
-                    
-                    <div class="metrics-section">
-                        <h3>Optimization Metrics</h3>
-                        <p style="font-size: 0.85rem; color: #9ca3af; margin-bottom: 1rem;">
-                            Complexity and code structure analysis. Performance & energy metrics are estimated for the web version.
-                        </p>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-label">Complexity</div>
-                                <div class="metric-before" id="complexity-before">-</div>
-                                <div class="metric-arrow">→</div>
-                                <div class="metric-after" id="complexity-after">-</div>
+                    <div id="results-content" class="results-content hidden">
+                        <div class="code-comparison">
+                            <div class="code-section">
+                                <h4 class="code-label">Original Code</h4>
+                                <pre class="code-display" id="original-display"></pre>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Performance</div>
-                                <div class="metric-status" id="performance-status">-</div>
-                                <div class="metric-detail" id="performance-detail">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Energy</div>
-                                <div class="metric-status" id="energy-status">-</div>
-                                <div class="metric-detail" id="energy-detail">-</div>
+                            <div class="code-section">
+                                <h4 class="code-label">Optimized Code</h4>
+                                <pre class="code-display optimized" id="optimized-display"></pre>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="impact-section" id="impact-section" style="display:none;">
-                        <h3>Real-World Impact</h3>
-                        <div class="impact-grid">
-                            <div class="impact-card">
-                                <div class="impact-label">Per Run</div>
-                                <div id="impact-per-run">-</div>
-                            </div>
-                            <div class="impact-card">
-                                <div class="impact-label">Yearly (10K runs)</div>
-                                <div id="impact-yearly">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="stats-footer">
-                        <button class="text-link" onclick="resetUI()">← Optimize Another</button>
                     </div>
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-container">
+            <div class="metric-box">
+                <div class="metric-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                        <polyline points="17 6 23 6 23 12"></polyline>
+                    </svg>
+                </div>
+                <div class="metric-label">COMPLEXITY</div>
+                <div class="metric-value" id="complexity-value">O(1)</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="metric-label">TIME</div>
+                <div class="metric-value" id="time-value">0</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                </div>
+                <div class="metric-label">ENERGY SAVED</div>
+                <div class="metric-value" id="energy-value">0</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a10 10 0 0 1 0 20"></path>
+                    </svg>
+                </div>
+                <div class="metric-label">CO₂ IMPACT</div>
+                <div class="metric-value" id="co2-value">0</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                </div>
+                <div class="metric-label">EFFICIENCY SCORE</div>
+                <div class="metric-value" id="efficiency-value">0</div>
+            </div>
+        </div>
+
+        <!-- Impact Projections -->
+        <div class="projections-container">
+            <div class="projection-box">
+                <div class="projection-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                </div>
+                <div class="projection-label">YEARLY PROJECTION (KWH)</div>
+                <div class="projection-value" id="yearly-kwh">0</div>
+            </div>
+            <div class="projection-box">
+                <div class="projection-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </div>
+                <div class="projection-label">10W LED USAGE (HOUR/S)</div>
+                <div class="projection-value" id="led-usage">0</div>
+            </div>
+            <div class="projection-box">
+                <div class="projection-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 17h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path>
+                        <path d="M6 17H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"></path>
+                        <line x1="12" y1="12" x2="12" y2="12"></line>
+                        <circle cx="16" cy="16" r="2"></circle>
+                        <circle cx="8" cy="16" r="2"></circle>
+                        <rect x="6" y="7" width="12" height="10" rx="1"></rect>
+                    </svg>
+                </div>
+                <div class="projection-label">ELECTRIC CAR DISTANCE (KMS)</div>
+                <div class="projection-value" id="car-distance">0</div>
+            </div>
+            <div class="projection-box">
+                <div class="projection-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                        <polyline points="17 3 12 7 7 3"></polyline>
+                    </svg>
+                </div>
+                <div class="projection-label">LAPTOP FULL CHARGES</div>
+                <div class="projection-value" id="laptop-charges">0</div>
+            </div>
+        </div>
+
+        <footer class="dashboard-footer">
+            <p>© CARBONIQ 2026 | POWERED BY GREENCOMPUTE ENGINE</p>
+        </footer>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=2.0"></script>
 </body>
 </html>

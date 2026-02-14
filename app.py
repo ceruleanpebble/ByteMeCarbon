@@ -15,9 +15,9 @@ from reporter import generate_report
 app = Flask(__name__)
 CORS(app)
 
-# Cache for template rendering
-app.config['TEMPLATES_AUTO_RELOAD'] = False
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 3600
+# Force no caching for development
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Config
 UPLOAD_FOLDER = "uploads"
@@ -114,11 +114,28 @@ def optimize_code(source_code):
 
 @app.route("/")
 def home():
-    """Serve the main page"""
+    """Serve the landing page"""
     try:
-        return render_template("index.html")
+        response = app.make_response(render_template("landing.html"))
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
     except Exception as e:
-        logger.error(f"Home page error: {str(e)}")
+        logger.error(f"Landing page error: {str(e)}")
+        return jsonify({"error": "Failed to load page"}), 500
+
+@app.route("/dashboard")
+def dashboard():
+    """Serve the dashboard page"""
+    try:
+        response = app.make_response(render_template("index.html"))
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except Exception as e:
+        logger.error(f"Dashboard page error: {str(e)}")
         return jsonify({"error": "Failed to load page"}), 500
 
 @app.route("/upload", methods=["POST"])

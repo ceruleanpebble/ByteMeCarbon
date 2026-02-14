@@ -47,7 +47,7 @@ def real_world_equivalents(co2_saved_kg, runs_per_year=50000):
             "co2_saved": f"{yearly_grams:.2f} grams",
             "energy_saved": f"{yearly_kwh:.4f} kWh",
             "equivalents": {
-                "10W_LED_bulb_usage": f"{(yearly_kwh / 0.01):.2f} hours",
+                "led_10w_usage": f"{(yearly_kwh / 0.01):.2f} hours",
                 "electric_car_distance": f"{(yearly_kwh / 0.15):.2f} km",
                 "laptop_full_charges": f"{(yearly_kwh / 0.05):.2f} charges"
             }
@@ -106,14 +106,18 @@ def generate_report(
             "after": after_complexity
         },
         "performance": {
-            "baseline_time": f"{baseline_time * 1000:.2f} ms",
-            "optimized_time": f"{optimized_time * 1000:.2f} ms",
+            "baseline_time": baseline_time,
+            "optimized_time": optimized_time,
+            "baseline_time_display": f"{baseline_time * 1000:.2f} ms",
+            "optimized_time_display": f"{optimized_time * 1000:.2f} ms",
             "time_difference": f"{time_improvement * 1000:.2f} ms",
             "status": performance_status
         },
         "energy": {
-            "baseline_co2": f"{baseline_energy * 1000:.6f} grams",
-            "optimized_co2": f"{optimized_energy * 1000:.6f} grams",
+            "baseline_co2": baseline_energy * 1000,
+            "optimized_co2": optimized_energy * 1000,
+            "baseline_co2_display": f"{baseline_energy * 1000:.6f} grams",
+            "optimized_co2_display": f"{optimized_energy * 1000:.6f} grams",
             "co2_difference": f"{co2_saved * 1000:.6f} grams",
             "status": energy_status
         },
