@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByteMeCarbon</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Fira+Code&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="parallax-wrapper">
+        <div class="parallax-layer bg-blob"></div>
+
+        <main class="content-layer">
+            <header class="fade-in">
+                <nav><span>ByteMeCarbon.</span></nav>
+                <div class="hero">
+                    <h1>Greener Code. <br><span class="gradient-text">Smaller Footprint.</span></h1>
+                    <p>Upload your Python scripts to optimize energy efficiency and reduce CO2 emissions per execution.</p>
+                </div>
+            </header>
+
+            <section class="glass-container">
+                <div id="drop-zone" class="drop-area">
+                    <div class="upload-icon">✦</div>
+                    <p>Drop your <code>.py</code> script here</p>
+                    <input type="file" id="file-input" accept=".py" hidden>
+                    <button class="minimal-btn" onclick="document.getElementById('file-input').click()">Select File</button>
+                </div>
+
+                <div id="results" class="hidden">
+                    <div class="comparison-grid">
+                        <div class="code-pane">
+                            <label>Current</label>
+                            <pre id="original-display"></pre>
+                        </div>
+                        <div class="code-pane highlight">
+                            <label>Optimized</label>
+                            <pre id="optimized-display"></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-footer">
+    <div class="energy-display">
+        Energy Saved <span id="energy-stat" class="energy-value">0%</span>
+    </div>
+
+    <div class="button-wrapper">
+        <button class="text-link" onclick="resetUI()">← Optimize Another</button>
+    </div>
+</div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
