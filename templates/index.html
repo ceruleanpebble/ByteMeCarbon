@@ -40,15 +40,48 @@
                         </div>
                     </div>
                     
-                    <div class="stats-footer">
-    <div class="energy-display">
-        Energy Saved <span id="energy-stat" class="energy-value">0%</span>
-    </div>
+                    <div class="metrics-section">
+                        <h3>Optimization Metrics</h3>
+                        <p style="font-size: 0.85rem; color: #9ca3af; margin-bottom: 1rem;">
+                            Complexity and code structure analysis. Performance & energy metrics are estimated for the web version.
+                        </p>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">Complexity</div>
+                                <div class="metric-before" id="complexity-before">-</div>
+                                <div class="metric-arrow">→</div>
+                                <div class="metric-after" id="complexity-after">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Performance</div>
+                                <div class="metric-status" id="performance-status">-</div>
+                                <div class="metric-detail" id="performance-detail">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Energy</div>
+                                <div class="metric-status" id="energy-status">-</div>
+                                <div class="metric-detail" id="energy-detail">-</div>
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="button-wrapper">
-        <button class="text-link" onclick="resetUI()">← Optimize Another</button>
-    </div>
-</div>
+                    <div class="impact-section" id="impact-section" style="display:none;">
+                        <h3>Real-World Impact</h3>
+                        <div class="impact-grid">
+                            <div class="impact-card">
+                                <div class="impact-label">Per Run</div>
+                                <div id="impact-per-run">-</div>
+                            </div>
+                            <div class="impact-card">
+                                <div class="impact-label">Yearly (10K runs)</div>
+                                <div id="impact-yearly">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-footer">
+                        <button class="text-link" onclick="resetUI()">← Optimize Another</button>
+                    </div>
                 </div>
             </section>
         </main>

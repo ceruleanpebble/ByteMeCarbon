@@ -1,9 +1,30 @@
 # reporter.py
+"""
+Report generation module.
+
+Creates detailed optimization reports with metrics, analysis, and real-world impact.
+"""
+
 import json
 from datetime import datetime
 
 
 def real_world_equivalents(co2_saved_kg, runs_per_year=50000):
+    """
+    Calculate real-world equivalents for carbon savings.
+    
+    Converts CO2 savings into relatable metrics like electric car distance,
+    laptop charges, and LED bulb usage hours.
+    
+    Args:
+        co2_saved_kg (float): CO2 saved in kilograms
+        runs_per_year (int): Estimated number of times code runs per year
+        
+    Returns:
+        dict: Dictionary with per-run and yearly equivalents
+            - per_run: CO2 and energy saved per execution
+            - projected_yearly: Yearly savings with real-world equivalents
+    """
     if co2_saved_kg <= 0:
         return {
             "message": "Energy difference is within measurement noise."
@@ -45,7 +66,30 @@ def generate_report(
     runs_per_year=50000,
     output_file="report.json"
 ):
-
+    """
+    Generate a comprehensive optimization report.
+    
+    Creates a JSON report with:
+    - Metadata (file name, timestamp)
+    - Complexity analysis (before/after)
+    - Performance metrics (time improvement)
+    - Energy metrics (CO2 reduction)
+    - Real-world impact calculations
+    
+    Args:
+        input_file (str): Path or name of the input file
+        before_complexity (str): Complexity before optimization (e.g., "O(n)")
+        after_complexity (str): Complexity after optimization
+        baseline_time (float): Execution time before optimization (seconds)
+        optimized_time (float): Execution time after optimization (seconds)
+        baseline_energy (float): CO2 emissions before optimization (kg)
+        optimized_energy (float): CO2 emissions after optimization (kg)
+        runs_per_year (int): Estimated yearly executions (default: 50000)
+        output_file (str): Path to save the report (default: "report.json")
+        
+    Returns:
+        str: Path to the generated report file
+    """
     time_improvement = baseline_time - optimized_time
     co2_saved = baseline_energy - optimized_energy
 

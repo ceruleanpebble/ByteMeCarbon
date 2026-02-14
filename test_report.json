@@ -1,0 +1,38 @@
+{
+    "metadata": {
+        "input_file": "test.py",
+        "generated_at": "2026-02-14T23:52:44.286110"
+    },
+    "complexity": {
+        "before": "O(1)",
+        "after": "O(1)"
+    },
+    "performance": {
+        "baseline_time": "1.00 ms",
+        "optimized_time": "0.90 ms",
+        "time_difference": "0.10 ms",
+        "status": "Improved"
+    },
+    "energy": {
+        "baseline_co2": "0.010000 grams",
+        "optimized_co2": "0.008000 grams",
+        "co2_difference": "0.002000 grams",
+        "status": "Reduced"
+    },
+    "real_world_impact": {
+        "per_run": {
+            "co2_saved": "0.002000 grams",
+            "energy_saved": "0.005000 Wh"
+        },
+        "projected_yearly": {
+            "runs_assumed": 10000,
+            "co2_saved": "20.00 grams",
+            "energy_saved": "0.0500 kWh",
+            "equivalents": {
+                "10W_LED_bulb_usage": "5.00 hours",
+                "electric_car_distance": "0.33 km",
+                "laptop_full_charges": "1.00 charges"
+            }
+        }
+    }
+}

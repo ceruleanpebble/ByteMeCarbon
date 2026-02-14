@@ -1,3 +1,6 @@
 Flask==3.1.2
 flask-cors==6.0.1
 gunicorn==25.1.0
+pytest==7.4.3
+pytest-cov==4.1.0
+codecarbon==3.2.2
