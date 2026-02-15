@@ -171,6 +171,38 @@ class FibonacciToIterative(ast.NodeTransformer):
         return new_func
 
 
+class SideEffectDetector(ast.NodeVisitor):
+    """Detect if a function has side effects (prints, mutations, I/O)."""
+    
+    def __init__(self):
+        self.has_side_effects = False
+    
+    def visit_Call(self, node: ast.Call):
+        """Check for function calls that have side effects."""
+        # Common side-effect functions
+        side_effect_funcs = {'print', 'input', 'open', 'write', 'append', 
+                            'remove', 'pop', 'clear', 'update', 'add'}
+        
+        if isinstance(node.func, ast.Name) and node.func.id in side_effect_funcs:
+            self.has_side_effects = True
+        
+        self.generic_visit(node)
+    
+    def visit_Assign(self, node: ast.Assign):
+        """Assignments to external variables can be side effects."""
+        # If assigning to attribute or subscript, it's likely a side effect
+        for target in node.targets:
+            if isinstance(target, (ast.Attribute, ast.Subscript)):
+                self.has_side_effects = True
+        self.generic_visit(node)
+    
+    def visit_AugAssign(self, node: ast.AugAssign):
+        """Augmented assignments (+=, etc.) to external vars are side effects."""
+        if isinstance(node.target, (ast.Attribute, ast.Subscript)):
+            self.has_side_effects = True
+        self.generic_visit(node)
+
+
 class MemoizationDecorator(ast.NodeTransformer):
     """Add memoization decorator to recursive functions that aren't tail-recursive."""
     
@@ -196,8 +228,16 @@ class MemoizationDecorator(ast.NodeTransformer):
         detector = RecursiveFunctionDetector(node.name)
         detector.visit(node)
         
-        # If recursive but not purely tail-recursive, add memoization
-        if detector.is_recursive and not (detector.is_tail_recursive and not detector.is_recursive):
+        # Check for side effects
+        side_effect_detector = SideEffectDetector()
+        side_effect_detector.visit(node)
+        
+        # Only add memoization if:
+        # 1. Function is recursive but not purely tail-recursive
+        # 2. Function has NO side effects (pure function)
+        if (detector.is_recursive and 
+            not (detector.is_tail_recursive and not detector.is_recursive) and
+            not side_effect_detector.has_side_effects):
             # Add @lru_cache decorator
             decorator = ast.Call(
                 func=ast.Attribute(
