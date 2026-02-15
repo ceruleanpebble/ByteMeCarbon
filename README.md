@@ -30,6 +30,9 @@ ByteMeCarbon analyzes your Python code, applies smart optimization rules, and me
    - Dead Code Removal (eliminate unreachable code)
    - Unused Import Removal (strip unnecessary imports)
    - Unused Function Removal (delete unused functions)
+   - Loop Optimization (move invariant code outside loops)
+   - Conditional Optimization (simplify redundant boolean logic)
+   - Recursion Optimization (add memoization for efficiency)
 3. **Measures** complexity before and after
 4. **Generates** detailed optimization reports
 5. **Calculates** real-world environmental impact
