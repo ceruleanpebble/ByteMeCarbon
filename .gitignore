@@ -24,3 +24,6 @@ emissions.csv_*.bak
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Example optimization files
+examples/
