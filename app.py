@@ -12,7 +12,7 @@ from parser import parse_code, generate_code
 from optimizer import optimize
 from complexity import estimate_complexity
 from reporter import generate_report
-from models import db, User
+from models import db, User, OptimizationHistory
 
 app = Flask(__name__)
 CORS(app)
@@ -29,11 +29,17 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'index'  # Redirect to landing page if not logged in
+login_manager.login_message = None  # Disable flash messages
 
 @login_manager.user_loader
 def load_user(user_id):
     """Load user by ID for Flask-Login."""
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Handle unauthorized access - redirect to landing page"""
+    return redirect(url_for('index'))
 
 # Force no caching for development
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -207,6 +213,84 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+@app.route("/api/user/stats")
+@login_required
+def user_stats():
+    """Get user statistics including total energy saved"""
+    try:
+        total_energy_saved = current_user.get_total_energy_saved()
+        total_optimizations = current_user.get_total_optimizations()
+        
+        return jsonify({
+            "email": current_user.email,
+            "total_energy_saved": total_energy_saved,
+            "total_optimizations": total_optimizations,
+            "member_since": current_user.created_at.isoformat()
+        }), 200
+    except Exception as e:
+        logger.error(f"User stats error: {str(e)}")
+        return jsonify({"error": "Failed to load user stats"}), 500
+
+@app.route("/api/history")
+@login_required
+def get_history():
+    """Get optimization history for current user"""
+    try:
+        # Get all optimizations for the user, ordered by most recent first
+        optimizations = OptimizationHistory.query.filter_by(
+            user_id=current_user.id
+        ).order_by(OptimizationHistory.created_at.desc()).all()
+        
+        history_list = [opt.to_dict() for opt in optimizations]
+        
+        return jsonify({
+            "history": history_list,
+            "total": len(history_list)
+        }), 200
+    except Exception as e:
+        logger.error(f"History error: {str(e)}")
+        return jsonify({"error": "Failed to load history"}), 500
+
+@app.route("/api/history/<int:history_id>")
+@login_required
+def get_history_item(history_id):
+    """Get a specific optimization from history"""
+    try:
+        optimization = OptimizationHistory.query.filter_by(
+            id=history_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not optimization:
+            return jsonify({"error": "History item not found"}), 404
+        
+        return jsonify(optimization.to_dict()), 200
+    except Exception as e:
+        logger.error(f"History item error: {str(e)}")
+        return jsonify({"error": "Failed to load history item"}), 500
+
+@app.route("/api/history/<int:history_id>", methods=["DELETE"])
+@login_required
+def delete_history_item(history_id):
+    """Delete a specific optimization from history"""
+    try:
+        optimization = OptimizationHistory.query.filter_by(
+            id=history_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not optimization:
+            return jsonify({"error": "History item not found"}), 404
+        
+        db.session.delete(optimization)
+        db.session.commit()
+        
+        return jsonify({"success": True, "message": "History item deleted"}), 200
+    except Exception as e:
+        logger.error(f"Delete history error: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": "Failed to delete history item"}), 500
+
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -262,6 +346,55 @@ def upload_file():
         try:
             optimized_code, report = optimize_code(original_code)
             
+            # Extract energy and time savings from report
+            # Get yearly energy saved from real_world_impact
+            energy_saved = 0.0
+            co2_reduced = 0.0
+            time_saved = 0.0
+            
+            if 'real_world_impact' in report:
+                impact = report['real_world_impact']
+                if 'projected_yearly' in impact:
+                    yearly = impact['projected_yearly']
+                    # Parse energy_saved string (e.g., "0.0001 kWh" -> 0.0001)
+                    if 'energy_saved' in yearly:
+                        energy_str = yearly['energy_saved'].split()[0]
+                        try:
+                            energy_saved = float(energy_str)
+                        except ValueError:
+                            energy_saved = 0.0
+                    # Parse co2_saved string (e.g., "0.0400 grams" -> 0.00004 kg)
+                    if 'co2_saved' in yearly:
+                        co2_str = yearly['co2_saved'].split()[0]
+                        try:
+                            co2_reduced = float(co2_str) / 1000  # Convert grams to kg
+                        except ValueError:
+                            co2_reduced = 0.0
+            
+            # Calculate time saved per year from performance metrics
+            if 'performance' in report:
+                perf = report['performance']
+                baseline_time = perf.get('baseline_time', 0)
+                optimized_time = perf.get('optimized_time', 0)
+                time_diff = baseline_time - optimized_time
+                runs_per_year = 10000  # From optimize_code function
+                time_saved = time_diff * runs_per_year
+            
+            # Save to optimization history
+            history = OptimizationHistory(
+                user_id=current_user.id,
+                filename=secure_filename(file.filename),
+                original_code=original_code,
+                optimized_code=optimized_code,
+                before_complexity=report.get('complexity', {}).get('before', 'N/A'),
+                after_complexity=report.get('complexity', {}).get('after', 'N/A'),
+                time_saved=time_saved,
+                energy_saved=energy_saved,
+                co2_reduced=co2_reduced
+            )
+            db.session.add(history)
+            db.session.commit()
+            
             return jsonify({
                 "original": original_code,
                 "optimized": optimized_code,
@@ -271,6 +404,7 @@ def upload_file():
             return jsonify({"error": str(e)}), 400
         except Exception as e:
             logger.error(f"Optimization error: {str(e)}")
+            db.session.rollback()
             return jsonify({"error": "Optimization failed. Please check your code."}), 500
 
     except Exception as e:
