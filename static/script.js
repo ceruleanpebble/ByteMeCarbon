@@ -193,18 +193,17 @@ function displayResults(data) {
 }
 
 function calculateEfficiencyScore(report) {
-    // Simple efficiency calculation based on complexity and performance improvements
+    
     let score = 0;
     
     try {
-        // Complexity improvement (max 40 points)
+        
         const beforeComp = report.complexity.before;
         const afterComp = report.complexity.after;
         if (beforeComp !== afterComp) {
             score += 40;
         }
         
-        // Performance improvement (max 30 points)
         const beforeTime = report.performance.baseline_time;
         const afterTime = report.performance.optimized_time;
         
@@ -213,7 +212,6 @@ function calculateEfficiencyScore(report) {
             score += Math.min(30, improvement * 3);
         }
         
-        // Energy improvement (max 30 points)
         const beforeEnergy = report.energy.baseline_co2;
         const afterEnergy = report.energy.optimized_co2;
         
@@ -228,7 +226,6 @@ function calculateEfficiencyScore(report) {
     return Math.round(score);
 }
 
-// Reset functionality
 function resetUI() {
     location.reload();
 }

@@ -9,6 +9,8 @@ from rules.constant_folding import ConstantFolder
 from rules.dead_code import DeadCodeRemover
 from rules.unused_imports import UnusedImportRemover
 from rules.unused_functions import UnusedFunctionRemover, collect_called_functions
+from rules.loop_optimization import optimize_loops
+from rules.conditional_optimization import optimize_conditionals
 
 from analyzer import collect_used_names
 
@@ -19,8 +21,10 @@ def optimize(tree):
     Optimization pipeline:
     1. Constant Folding: Pre-compute constant expressions
     2. Dead Code Removal: Remove unreachable code
-    3. Unused Import Removal: Remove imported but unused modules
-    4. Unused Function Removal: Remove functions that are never called
+    3. Conditional Optimization: Simplify if/else statements
+    4. Loop Optimization: Optimize for/while loops
+    5. Unused Import Removal: Remove imported but unused modules
+    6. Unused Function Removal: Remove functions that are never called
     
     Args:
         tree (ast.AST): Abstract Syntax Tree to optimize
@@ -34,6 +38,8 @@ def optimize(tree):
     # Apply optimization rules in order
     tree = ConstantFolder().visit(tree)
     tree = DeadCodeRemover().visit(tree)
+    tree = optimize_conditionals(tree)  # NEW: Optimize conditionals
+    tree = optimize_loops(tree)  # NEW: Optimize loops
     tree = UnusedImportRemover(used_names).visit(tree)
 
     # Apply function-level optimizations
