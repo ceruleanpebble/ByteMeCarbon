@@ -93,3 +93,134 @@ const animateStats = () => {
 };
 
 animateStats();
+
+// ===== Authentication Modal =====
+const authModal = document.getElementById('authModal');
+const getStartedBtn = document.getElementById('getStartedBtn');
+const closeModal = document.querySelector('.auth-close');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const showSignupLink = document.getElementById('showSignup');
+const showLoginLink = document.getElementById('showLogin');
+const loginFormElement = document.getElementById('loginFormElement');
+const signupFormElement = document.getElementById('signupFormElement');
+
+// Open modal
+getStartedBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    authModal.classList.add('active');
+});
+
+// Close modal
+closeModal.addEventListener('click', () => {
+    authModal.classList.remove('active');
+});
+
+// Close modal on outside click
+authModal.addEventListener('click', (e) => {
+    if (e.target === authModal) {
+        authModal.classList.remove('active');
+    }
+});
+
+// Switch to signup
+showSignupLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.classList.remove('active');
+    signupForm.classList.add('active');
+    clearErrors();
+});
+
+// Switch to login
+showLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    signupForm.classList.remove('active');
+    loginForm.classList.add('active');
+    clearErrors();
+});
+
+// Clear error messages
+function clearErrors() {
+    document.getElementById('loginError').classList.remove('active');
+    document.getElementById('signupError').classList.remove('active');
+}
+
+function showError(elementId, message) {
+    const errorEl = document.getElementById(elementId);
+    errorEl.textContent = message;
+    errorEl.classList.add('active');
+}
+
+// Handle login
+loginFormElement.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearErrors();
+    
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
+        } else {
+            showError('loginError', data.error || 'Login failed');
+        }
+    } catch (error) {
+        showError('loginError', 'Network error. Please try again.');
+    }
+});
+
+// Handle signup
+signupFormElement.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearErrors();
+    
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+    
+    // Validate passwords match
+    if (password !== passwordConfirm) {
+        showError('signupError', 'Passwords do not match');
+        return;
+    }
+    
+    // Validate password length
+    if (password.length < 6) {
+        showError('signupError', 'Password must be at least 6 characters');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
+        } else {
+            showError('signupError', data.error || 'Signup failed');
+        }
+    } catch (error) {
+        showError('signupError', 'Network error. Please try again.');
+    }
+});
+

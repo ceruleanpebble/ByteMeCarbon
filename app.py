@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
 from flask_cors import CORS
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 import json
@@ -11,9 +12,28 @@ from parser import parse_code, generate_code
 from optimizer import optimize
 from complexity import estimate_complexity
 from reporter import generate_report
+from models import db, User
 
 app = Flask(__name__)
 CORS(app)
+
+# Secret key for sessions
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize extensions
+db.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'index'  # Redirect to landing page if not logged in
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID for Flask-Login."""
+    return User.query.get(int(user_id))
 
 # Force no caching for development
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -113,8 +133,8 @@ def optimize_code(source_code):
         raise Exception(f"Optimization failed: {str(e)}")
 
 @app.route("/")
-def home():
-    """Serve the landing page"""
+def index():
+    """Serve the landing page with login/signup"""
     try:
         response = app.make_response(render_template("landing.html"))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -125,9 +145,72 @@ def home():
         logger.error(f"Landing page error: {str(e)}")
         return jsonify({"error": "Failed to load page"}), 500
 
+@app.route("/signup", methods=["POST"])
+def signup():
+    """Handle user signup"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        
+        # Check if user already exists
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "Email already registered"}), 400
+        
+        # Create new user
+        user = User(email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        # Log the user in
+        login_user(user)
+        
+        return jsonify({"success": True, "message": "Account created successfully"}), 201
+    except Exception as e:
+        logger.error(f"Signup error: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": "Signup failed"}), 500
+
+@app.route("/login", methods=["POST"])
+def login():
+    """Handle user login"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        
+        # Find user
+        user = User.query.filter_by(email=email).first()
+        
+        if not user or not user.check_password(password):
+            return jsonify({"error": "Invalid email or password"}), 401
+        
+        # Log the user in
+        login_user(user)
+        
+        return jsonify({"success": True, "message": "Logged in successfully"}), 200
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        return jsonify({"error": "Login failed"}), 500
+
+@app.route("/logout")
+@login_required
+def logout():
+    """Handle user logout"""
+    logout_user()
+    return redirect(url_for('index'))
+
 @app.route("/dashboard")
+@login_required
 def dashboard():
-    """Serve the dashboard page"""
+    """Serve the dashboard page (protected)"""
     try:
         response = app.make_response(render_template("index.html"))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -139,6 +222,7 @@ def dashboard():
         return jsonify({"error": "Failed to load page"}), 500
 
 @app.route("/upload", methods=["POST"])
+@login_required
 def upload_file():
     """Handle file upload and optimization"""
     try:
@@ -206,6 +290,11 @@ def server_error(e):
 
 if __name__ == "__main__":
     try:
+        # Create database tables
+        with app.app_context():
+            db.create_all()
+            logger.info("Database initialized")
+        
         import os
         from waitress import serve
         
