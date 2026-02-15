@@ -11,6 +11,8 @@ from rules.unused_imports import UnusedImportRemover
 from rules.unused_functions import UnusedFunctionRemover, collect_called_functions
 from rules.loop_optimization import optimize_loops
 from rules.conditional_optimization import optimize_conditionals
+from rules.recursion_optimization import optimize_recursion
+from rules.remove_unused_apis import optimize_remove_unused_apis
 
 from analyzer import collect_used_names
 
@@ -40,6 +42,11 @@ def optimize(tree):
     tree = DeadCodeRemover().visit(tree)
     tree = optimize_conditionals(tree)  # NEW: Optimize conditionals
     tree = optimize_loops(tree)  # NEW: Optimize loops
+    tree = optimize_recursion(tree)  # NEW: Convert simple tail-recursion to iteration + add memoization
+    tree = optimize_remove_unused_apis(tree, project_root='.')  # NEW: remove unused APIs project-wide (conservative)
+    
+    # Re-collect used names AFTER recursion optimization (which may add functools references)
+    used_names = collect_used_names(tree)
     tree = UnusedImportRemover(used_names).visit(tree)
 
     # Apply function-level optimizations
