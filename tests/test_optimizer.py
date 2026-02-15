@@ -50,7 +50,7 @@ def unused():
 x = used()
 """
         tree = parse_code(code)
-        optimized = optimize(tree)
+        optimized = optimize(tree, remove_unused=True)  # Enable unused function removal for this test
         generated = generate_code(optimized)
         assert "used" in generated
         assert "unused" not in generated

@@ -23,7 +23,7 @@ print(used())
 
     # Now parse module a and run the optimizer pointing project_root at tmp_path
     tree = ast.parse(a.read_text())
-    new_tree = optimize_remove_unused_apis(tree, project_root=str(tmp_path))
+    new_tree = optimize_remove_unused_apis(tree, project_root=str(tmp_path), enable=True)
 
     # The unused_api function should be removed
     names = [n.name for n in new_tree.body if isinstance(n, ast.FunctionDef)]
@@ -44,7 +44,7 @@ def internal():
 ''')
 
     tree = ast.parse(m.read_text())
-    new_tree = optimize_remove_unused_apis(tree, project_root=str(tmp_path))
+    new_tree = optimize_remove_unused_apis(tree, project_root=str(tmp_path), enable=True)
 
     names = [n.name for n in new_tree.body if isinstance(n, ast.FunctionDef)]
     assert 'exported' in names

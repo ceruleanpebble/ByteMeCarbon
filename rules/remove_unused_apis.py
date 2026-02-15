@@ -64,16 +64,22 @@ def _collect_project_used_names(root: str) -> Set[str]:
     return used.union(exports)
 
 
-def optimize_remove_unused_apis(tree: ast.AST, project_root: str = '.') -> ast.AST:
+def optimize_remove_unused_apis(tree: ast.AST, project_root: str = '.', enable: bool = False) -> ast.AST:
     """Remove top-level functions/classes from `tree` not referenced in project.
 
     Args:
         tree: AST of the module being optimized
         project_root: path to the repository root to scan
+        enable: whether to enable this optimization (default False for single-file scenarios)
 
     Returns:
         Modified AST with unused top-level functions/classes removed.
     """
+    # Skip this optimization if not explicitly enabled
+    # (too aggressive for single-file uploads where there may be no top-level calls)
+    if not enable:
+        return tree
+    
     # Start from project-wide usages, then make sure any names used in the
     # current module AST are also included so we never remove functions that
     # are called within the same file.
