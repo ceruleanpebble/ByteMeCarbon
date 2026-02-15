@@ -25,8 +25,9 @@ def optimize(tree):
     2. Dead Code Removal: Remove unreachable code
     3. Conditional Optimization: Simplify if/else statements
     4. Loop Optimization: Optimize for/while loops
-    5. Unused Import Removal: Remove imported but unused modules
-    6. Unused Function Removal: Remove functions that are never called
+    5. Cache Optimization: Identify and suggest caching for frequently accessed values
+    6. Unused Import Removal: Remove imported but unused modules
+    7. Unused Function Removal: Remove functions that are never called
     
     Args:
         tree (ast.AST): Abstract Syntax Tree to optimize
@@ -40,10 +41,10 @@ def optimize(tree):
     # Apply optimization rules in order
     tree = ConstantFolder().visit(tree)
     tree = DeadCodeRemover().visit(tree)
-    tree = optimize_conditionals(tree)  # NEW: Optimize conditionals
-    tree = optimize_loops(tree)  # NEW: Optimize loops
-    tree = optimize_recursion(tree)  # NEW: Convert simple tail-recursion to iteration + add memoization
-    tree = optimize_remove_unused_apis(tree, project_root='.')  # NEW: remove unused APIs project-wide (conservative)
+    tree = optimize_conditionals(tree)  # Optimize conditionals
+    tree = optimize_loops(tree)  # Optimize loops
+    tree = optimize_recursion(tree)  # Convert simple tail-recursion to iteration + add memoization
+    tree = optimize_remove_unused_apis(tree, project_root='.')  # Remove unused APIs project-wide (conservative)
     
     # Re-collect used names AFTER recursion optimization (which may add functools references)
     used_names = collect_used_names(tree)
