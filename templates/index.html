@@ -10,8 +10,30 @@
 <body>
     <div class="dashboard-container">
         <header class="dashboard-header">
-            <h1 class="dashboard-title">CarbonIQ Dashboard</h1>
-            <p class="dashboard-subtitle">Real-time Sustainability Analysis & Optimization</p>
+            <div>
+                <h1 class="dashboard-title">CarbonIQ Dashboard</h1>
+                <p class="dashboard-subtitle">Real-time Sustainability Analysis & Optimization</p>
+            </div>
+            <div class="header-actions">
+                <div class="user-stats" id="user-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Energy Saved</span>
+                        <span class="stat-value" id="total-energy">0 kWh</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Optimizations</span>
+                        <span class="stat-value" id="total-optimizations">0</span>
+                    </div>
+                </div>
+                <button class="history-btn" id="view-history-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    View History
+                </button>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
         </header>
 
         <div class="dashboard-grid">
@@ -194,9 +216,53 @@
         </div>
 
         <footer class="dashboard-footer">
-            <p>© CARBONIQ 2026 | POWERED BY GREENCOMPUTE ENGINE</p>
+            <p>© CARBONIQ 2026 | POWERED BY ByteMeCarbon</p>
         </footer>
     </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="history-modal" style="display: none;">
+        <div class="history-modal-content">
+            <div class="history-modal-header">
+                <h2>Optimization History</h2>
+                <button class="close-modal" id="close-history-modal">&times;</button>
+            </div>
+            <div class="history-modal-body">
+                <div id="history-list" class="history-list">
+                    <div class="loading">Loading history...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Detail Modal -->
+    <div id="detail-modal" class="history-modal" style="display: none;">
+        <div class="history-modal-content detail-modal-content">
+            <div class="history-modal-header">
+                <h2 id="detail-filename">File Details</h2>
+                <button class="close-modal" id="close-detail-modal">&times;</button>
+            </div>
+            <div class="history-modal-body">
+                <div class="detail-tabs">
+                    <button class="detail-tab active" data-tab="original">Original Code</button>
+                    <button class="detail-tab" data-tab="optimized">Optimized Code</button>
+                    <button class="detail-tab" data-tab="metrics">Metrics</button>
+                </div>
+                <div class="detail-content">
+                    <div id="detail-original" class="detail-tab-content active">
+                        <pre><code id="original-code-detail"></code></pre>
+                    </div>
+                    <div id="detail-optimized" class="detail-tab-content">
+                        <pre><code id="optimized-code-detail"></code></pre>
+                    </div>
+                    <div id="detail-metrics" class="detail-tab-content">
+                        <div id="metrics-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='script.js') }}?v=2.0"></script>
 </body>
 </html>

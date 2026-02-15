@@ -91,6 +91,9 @@ optimizeBtn.addEventListener('click', () => {
         
         displayResults(data);
         optimizeBtn.innerHTML = '<span class="btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg></span> Optimization Complete';
+        
+        // Reload user stats after successful optimization
+        loadUserStats();
     })
     .catch(error => {
         console.error('Error:', error);
@@ -228,4 +231,203 @@ function calculateEfficiencyScore(report) {
 
 function resetUI() {
     location.reload();
+}
+
+// User Stats and History
+document.addEventListener('DOMContentLoaded', () => {
+    loadUserStats();
+    setupHistoryModal();
+});
+
+async function loadUserStats() {
+    try {
+        const response = await fetch('/api/user/stats');
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('total-energy').textContent = `${data.total_energy_saved.toFixed(6)} kWh`;
+            document.getElementById('total-optimizations').textContent = data.total_optimizations;
+        }
+    } catch (error) {
+        console.error('Error loading user stats:', error);
+    }
+}
+
+function setupHistoryModal() {
+    const viewHistoryBtn = document.getElementById('view-history-btn');
+    const historyModal = document.getElementById('history-modal');
+    const closeHistoryModal = document.getElementById('close-history-modal');
+    const detailModal = document.getElementById('detail-modal');
+    const closeDetailModal = document.getElementById('close-detail-modal');
+    
+    viewHistoryBtn.addEventListener('click', async () => {
+        historyModal.style.display = 'flex';
+        await loadHistory();
+    });
+    
+    closeHistoryModal.addEventListener('click', () => {
+        historyModal.style.display = 'none';
+    });
+    
+    closeDetailModal.addEventListener('click', () => {
+        detailModal.style.display = 'none';
+    });
+    
+    // Close on outside click
+    historyModal.addEventListener('click', (e) => {
+        if (e.target === historyModal) {
+            historyModal.style.display = 'none';
+        }
+    });
+    
+    detailModal.addEventListener('click', (e) => {
+        if (e.target === detailModal) {
+            detailModal.style.display = 'none';
+        }
+    });
+    
+    // Setup detail tabs
+    const detailTabs = document.querySelectorAll('.detail-tab');
+    detailTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            detailTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            document.querySelectorAll('.detail-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`detail-${tabName}`).classList.add('active');
+        });
+    });
+}
+
+async function loadHistory() {
+    const historyList = document.getElementById('history-list');
+    historyList.innerHTML = '<div class="loading">Loading history...</div>';
+    
+    try {
+        const response = await fetch('/api/history');
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.history.length === 0) {
+                historyList.innerHTML = '<div class="empty-state">No optimization history yet. Upload a file to get started!</div>';
+                return;
+            }
+            
+            historyList.innerHTML = '';
+            data.history.forEach(item => {
+                const historyItem = createHistoryItem(item);
+                historyList.appendChild(historyItem);
+            });
+        } else {
+            historyList.innerHTML = '<div class="empty-state">Failed to load history</div>';
+        }
+    } catch (error) {
+        console.error('Error loading history:', error);
+        historyList.innerHTML = '<div class="empty-state">Error loading history</div>';
+    }
+}
+
+function createHistoryItem(item) {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    
+    const date = new Date(item.created_at).toLocaleString();
+    
+    div.innerHTML = `
+        <div class="history-item-info">
+            <div class="history-item-filename">${item.filename}</div>
+            <div class="history-item-meta">
+                <span>📅 ${date}</span>
+                <span>⚡ ${item.before_complexity} → ${item.after_complexity}</span>
+                <span>💚 ${item.energy_saved.toFixed(6)} kWh saved</span>
+            </div>
+        </div>
+        <div class="history-item-actions">
+            <button class="history-item-btn view-btn" onclick="viewHistoryDetail(${item.id})">View</button>
+            <button class="history-item-btn delete-btn" onclick="deleteHistoryItem(${item.id})">Delete</button>
+        </div>
+    `;
+    
+    return div;
+}
+
+async function viewHistoryDetail(id) {
+    try {
+        const response = await fetch(`/api/history/${id}`);
+        if (response.ok) {
+            const item = await response.json();
+            
+            // Set filename
+            document.getElementById('detail-filename').textContent = item.filename;
+            
+            // Set code
+            document.getElementById('original-code-detail').textContent = item.original_code;
+            document.getElementById('optimized-code-detail').textContent = item.optimized_code;
+            
+            // Set metrics
+            const metricsContent = document.getElementById('metrics-content');
+            metricsContent.innerHTML = `
+                <div class="metric-detail">
+                    <div class="metric-detail-label">Complexity Before</div>
+                    <div class="metric-detail-value">${item.before_complexity}</div>
+                </div>
+                <div class="metric-detail">
+                    <div class="metric-detail-label">Complexity After</div>
+                    <div class="metric-detail-value">${item.after_complexity}</div>
+                </div>
+                <div class="metric-detail">
+                    <div class="metric-detail-label">Energy Saved</div>
+                    <div class="metric-detail-value">${item.energy_saved.toFixed(6)} kWh</div>
+                </div>
+                <div class="metric-detail">
+                    <div class="metric-detail-label">CO₂ Reduced</div>
+                    <div class="metric-detail-value">${item.co2_reduced.toFixed(6)} kg</div>
+                </div>
+                <div class="metric-detail">
+                    <div class="metric-detail-label">Time Saved</div>
+                    <div class="metric-detail-value">${item.time_saved.toFixed(4)}s/year</div>
+                </div>
+                <div class="metric-detail">
+                    <div class="metric-detail-label">Date</div>
+                    <div class="metric-detail-value" style="font-size: 0.9rem;">${new Date(item.created_at).toLocaleDateString()}</div>
+                </div>
+            `;
+            
+            // Show detail modal
+            document.getElementById('detail-modal').style.display = 'flex';
+            
+            // Reset to first tab
+            document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.detail-tab[data-tab="original"]').classList.add('active');
+            document.querySelectorAll('.detail-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('detail-original').classList.add('active');
+        }
+    } catch (error) {
+        console.error('Error loading history detail:', error);
+        alert('Failed to load history details');
+    }
+}
+
+async function deleteHistoryItem(id) {
+    if (!confirm('Are you sure you want to delete this item from your history?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/history/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            await loadHistory();
+            await loadUserStats(); // Refresh stats after deletion
+        } else {
+            alert('Failed to delete history item');
+        }
+    } catch (error) {
+        console.error('Error deleting history item:', error);
+        alert('Failed to delete history item');
+    }
 }

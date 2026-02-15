@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
 from flask_cors import CORS
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 import json
@@ -11,9 +12,34 @@ from parser import parse_code, generate_code
 from optimizer import optimize
 from complexity import estimate_complexity
 from reporter import generate_report
+from models import db, User, OptimizationHistory
 
 app = Flask(__name__)
 CORS(app)
+
+# Secret key for sessions
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize extensions
+db.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'index'  # Redirect to landing page if not logged in
+login_manager.login_message = None  # Disable flash messages
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID for Flask-Login."""
+    return db.session.get(User, int(user_id))
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Handle unauthorized access - redirect to landing page"""
+    return redirect(url_for('index'))
 
 # Force no caching for development
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -113,8 +139,8 @@ def optimize_code(source_code):
         raise Exception(f"Optimization failed: {str(e)}")
 
 @app.route("/")
-def home():
-    """Serve the landing page"""
+def index():
+    """Serve the landing page with login/signup"""
     try:
         response = app.make_response(render_template("landing.html"))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -125,9 +151,150 @@ def home():
         logger.error(f"Landing page error: {str(e)}")
         return jsonify({"error": "Failed to load page"}), 500
 
+@app.route("/signup", methods=["POST"])
+def signup():
+    """Handle user signup"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        
+        # Check if user already exists
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "Email already registered"}), 400
+        
+        # Create new user
+        user = User(email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        # Log the user in
+        login_user(user)
+        
+        return jsonify({"success": True, "message": "Account created successfully"}), 201
+    except Exception as e:
+        logger.error(f"Signup error: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": "Signup failed"}), 500
+
+@app.route("/login", methods=["POST"])
+def login():
+    """Handle user login"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        
+        # Find user
+        user = User.query.filter_by(email=email).first()
+        
+        if not user or not user.check_password(password):
+            return jsonify({"error": "Invalid email or password"}), 401
+        
+        # Log the user in
+        login_user(user)
+        
+        return jsonify({"success": True, "message": "Logged in successfully"}), 200
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        return jsonify({"error": "Login failed"}), 500
+
+@app.route("/logout")
+@login_required
+def logout():
+    """Handle user logout"""
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route("/api/user/stats")
+@login_required
+def user_stats():
+    """Get user statistics including total energy saved"""
+    try:
+        total_energy_saved = current_user.get_total_energy_saved()
+        total_optimizations = current_user.get_total_optimizations()
+        
+        return jsonify({
+            "email": current_user.email,
+            "total_energy_saved": total_energy_saved,
+            "total_optimizations": total_optimizations,
+            "member_since": current_user.created_at.isoformat()
+        }), 200
+    except Exception as e:
+        logger.error(f"User stats error: {str(e)}")
+        return jsonify({"error": "Failed to load user stats"}), 500
+
+@app.route("/api/history")
+@login_required
+def get_history():
+    """Get optimization history for current user"""
+    try:
+        # Get all optimizations for the user, ordered by most recent first
+        optimizations = OptimizationHistory.query.filter_by(
+            user_id=current_user.id
+        ).order_by(OptimizationHistory.created_at.desc()).all()
+        
+        history_list = [opt.to_dict() for opt in optimizations]
+        
+        return jsonify({
+            "history": history_list,
+            "total": len(history_list)
+        }), 200
+    except Exception as e:
+        logger.error(f"History error: {str(e)}")
+        return jsonify({"error": "Failed to load history"}), 500
+
+@app.route("/api/history/<int:history_id>")
+@login_required
+def get_history_item(history_id):
+    """Get a specific optimization from history"""
+    try:
+        optimization = OptimizationHistory.query.filter_by(
+            id=history_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not optimization:
+            return jsonify({"error": "History item not found"}), 404
+        
+        return jsonify(optimization.to_dict()), 200
+    except Exception as e:
+        logger.error(f"History item error: {str(e)}")
+        return jsonify({"error": "Failed to load history item"}), 500
+
+@app.route("/api/history/<int:history_id>", methods=["DELETE"])
+@login_required
+def delete_history_item(history_id):
+    """Delete a specific optimization from history"""
+    try:
+        optimization = OptimizationHistory.query.filter_by(
+            id=history_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not optimization:
+            return jsonify({"error": "History item not found"}), 404
+        
+        db.session.delete(optimization)
+        db.session.commit()
+        
+        return jsonify({"success": True, "message": "History item deleted"}), 200
+    except Exception as e:
+        logger.error(f"Delete history error: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": "Failed to delete history item"}), 500
+
 @app.route("/dashboard")
+@login_required
 def dashboard():
-    """Serve the dashboard page"""
+    """Serve the dashboard page (protected)"""
     try:
         response = app.make_response(render_template("index.html"))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -139,6 +306,7 @@ def dashboard():
         return jsonify({"error": "Failed to load page"}), 500
 
 @app.route("/upload", methods=["POST"])
+@login_required
 def upload_file():
     """Handle file upload and optimization"""
     try:
@@ -178,6 +346,55 @@ def upload_file():
         try:
             optimized_code, report = optimize_code(original_code)
             
+            # Extract energy and time savings from report
+            # Get yearly energy saved from real_world_impact
+            energy_saved = 0.0
+            co2_reduced = 0.0
+            time_saved = 0.0
+            
+            if 'real_world_impact' in report:
+                impact = report['real_world_impact']
+                if 'projected_yearly' in impact:
+                    yearly = impact['projected_yearly']
+                    # Parse energy_saved string (e.g., "0.0001 kWh" -> 0.0001)
+                    if 'energy_saved' in yearly:
+                        energy_str = yearly['energy_saved'].split()[0]
+                        try:
+                            energy_saved = float(energy_str)
+                        except ValueError:
+                            energy_saved = 0.0
+                    # Parse co2_saved string (e.g., "0.0400 grams" -> 0.00004 kg)
+                    if 'co2_saved' in yearly:
+                        co2_str = yearly['co2_saved'].split()[0]
+                        try:
+                            co2_reduced = float(co2_str) / 1000  # Convert grams to kg
+                        except ValueError:
+                            co2_reduced = 0.0
+            
+            # Calculate time saved per year from performance metrics
+            if 'performance' in report:
+                perf = report['performance']
+                baseline_time = perf.get('baseline_time', 0)
+                optimized_time = perf.get('optimized_time', 0)
+                time_diff = baseline_time - optimized_time
+                runs_per_year = 10000  # From optimize_code function
+                time_saved = time_diff * runs_per_year
+            
+            # Save to optimization history
+            history = OptimizationHistory(
+                user_id=current_user.id,
+                filename=secure_filename(file.filename),
+                original_code=original_code,
+                optimized_code=optimized_code,
+                before_complexity=report.get('complexity', {}).get('before', 'N/A'),
+                after_complexity=report.get('complexity', {}).get('after', 'N/A'),
+                time_saved=time_saved,
+                energy_saved=energy_saved,
+                co2_reduced=co2_reduced
+            )
+            db.session.add(history)
+            db.session.commit()
+            
             return jsonify({
                 "original": original_code,
                 "optimized": optimized_code,
@@ -187,6 +404,7 @@ def upload_file():
             return jsonify({"error": str(e)}), 400
         except Exception as e:
             logger.error(f"Optimization error: {str(e)}")
+            db.session.rollback()
             return jsonify({"error": "Optimization failed. Please check your code."}), 500
 
     except Exception as e:
@@ -206,6 +424,11 @@ def server_error(e):
 
 if __name__ == "__main__":
     try:
+        # Create database tables
+        with app.app_context():
+            db.create_all()
+            logger.info("Database initialized")
+        
         import os
         from waitress import serve
         
